@@ -3,9 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
-	"github.com/radovskyb/watcher"
+	"../../../watcher"
 )
 
 func main() {
@@ -26,18 +27,21 @@ func main() {
 	// will be watched.
 	// r := regexp.MustCompile("^abc$")
 	// w.AddFilterHook(watcher.RegexFilterHook(r, false))
-
+	counter := 0
 	go func() {
 		for {
 			select {
 			case event := <-w.Event:
-				fmt.Println(event) // Print the event's info.
+				fmt.Println(counter) // Print the event's info.
+				_ = event
+				counter++
 			case err := <-w.Error:
 				log.Fatalln(err)
 			case <-w.Closed:
 				return
 			}
 		}
+		fmt.Println(counter)
 	}()
 
 	// Watch this folder for changes.
@@ -46,23 +50,29 @@ func main() {
 	}
 
 	// Watch test_folder recursively for changes.
-	if err := w.AddRecursive("../test_folder"); err != nil {
+	dirPath, _ := os.Getwd()
+	if err := w.AddRecursive(dirPath); err != nil {
 		log.Fatalln(err)
 	}
 
 	// Print a list of all of the files and folders currently
 	// being watched and their paths.
-	for path, f := range w.WatchedFiles() {
-		fmt.Printf("%s: %s\n", path, f.Name())
-	}
+	//for path, f := range w.WatchedFiles() {
+	//	fmt.Printf("%s: %s\n", path, f.Name())
+	//}
 
 	fmt.Println()
 
 	// Trigger 2 events after watcher started.
 	go func() {
 		w.Wait()
-		w.TriggerEvent(watcher.Create, nil)
-		w.TriggerEvent(watcher.Remove, nil)
+		start := time.Now()
+		for i := 0; i < 300000; i++ {
+			fmt.Println(i)
+			go w.TriggerEvent(watcher.Rename, nil)
+		}
+		duration := time.Since(start)
+		fmt.Println(duration)
 	}()
 
 	// Start the watching process - it'll check for changes every 100ms.

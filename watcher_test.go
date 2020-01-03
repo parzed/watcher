@@ -1,7 +1,6 @@
 package watcher
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -20,7 +19,7 @@ func setup(t testing.TB) (string, func()) {
 		t.Fatal(err)
 	}
 
-	err = ioutil.WriteFile(filepath.Join(testDir, "file5.txt"),
+	err = ioutil.WriteFile(filepath.Join(testDir, "file.txt"),
 		[]byte{}, 0755)
 	if err != nil {
 		t.Fatal(err)
@@ -877,7 +876,7 @@ func BenchmarkEventRenameFile(b *testing.B) {
 			if event.Op != Rename {
 				b.Errorf("expected event to be Rename, got %s", event.Op)
 			}
-		case <-time.After(time.Millisecond * 500):
+		case <-time.After(time.Millisecond * 250):
 			b.Fatal("received no rename event")
 		}
 
@@ -916,10 +915,8 @@ func BenchmarkEventCreateFile(b *testing.B) {
 		case event := <-w.Event:
 			if (event.Op != Write) && (event.Op != Create) {
 				b.Errorf("expected event to be Rename, got %s", event.Op)
-			} else {
-				fmt.Println("write")
 			}
-		case <-time.After(time.Millisecond * 10000):
+		case <-time.After(time.Millisecond * 250):
 			b.Fatal("received no create event")
 		}
 	}
