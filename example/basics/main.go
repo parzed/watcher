@@ -69,7 +69,7 @@ func main() {
 		start := time.Now()
 		for i := 0; i < 300000; i++ {
 			fmt.Println(i)
-			go w.TriggerEvent(watcher.Rename, nil)
+			w.TriggerEvent(watcher.Rename, nil)
 		}
 		duration := time.Since(start)
 		fmt.Println(duration)
