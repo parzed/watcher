@@ -1,6 +1,7 @@
 package watcher
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -19,7 +20,7 @@ func setup(t testing.TB) (string, func()) {
 		t.Fatal(err)
 	}
 
-	err = ioutil.WriteFile(filepath.Join(testDir, "file.txt"),
+	err = ioutil.WriteFile(filepath.Join(testDir, "file5.txt"),
 		[]byte{}, 0755)
 	if err != nil {
 		t.Fatal(err)
@@ -876,11 +877,51 @@ func BenchmarkEventRenameFile(b *testing.B) {
 			if event.Op != Rename {
 				b.Errorf("expected event to be Rename, got %s", event.Op)
 			}
-		case <-time.After(time.Millisecond * 250):
+		case <-time.After(time.Millisecond * 500):
 			b.Fatal("received no rename event")
 		}
 
 		filenameFrom, filenameTo = filenameTo, filenameFrom
+	}
+}
+
+func BenchmarkEventCreateFile(b *testing.B) {
+	testDir, teardown := setup(b)
+	defer teardown()
+
+	w := New()
+
+	// Add the testDir to the watchlist.
+	if err := w.AddRecursive(testDir); err != nil {
+		b.Fatal(err)
+	}
+
+	go func() {
+		// Start the watching process.
+		if err := w.Start(time.Millisecond); err != nil {
+			b.Fatal(err)
+		}
+	}()
+
+	var filenameFrom = filepath.Join(testDir, "file.txt")
+	//var filenameTo = filepath.Join(testDir, "file1.txt")
+
+	for i := 0; i < b.N; i++ {
+		_, err := os.Create(filenameFrom)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		select {
+		case event := <-w.Event:
+			if (event.Op != Write) && (event.Op != Create) {
+				b.Errorf("expected event to be Rename, got %s", event.Op)
+			} else {
+				fmt.Println("write")
+			}
+		case <-time.After(time.Millisecond * 10000):
+			b.Fatal("received no create event")
+		}
 	}
 }
 
